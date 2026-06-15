@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Neoflo — Admin Panel</title>
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -442,6 +443,41 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Import Modal ───────────────────────────────────────── */
+  .import-dropzone {
+    border: 2px dashed var(--border-2); border-radius: 10px;
+    padding: 28px 20px; text-align: center; cursor: pointer;
+    transition: all 0.2s; margin-bottom: 16px; background: var(--surface-2);
+  }
+  .import-dropzone:hover, .import-dropzone.drag-over {
+    border-color: var(--accent); background: var(--hover);
+  }
+  .import-drop-icon { font-size: 22px; margin-bottom: 8px; color: var(--muted); font-weight: 300; }
+  .import-drop-text { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .import-drop-hint { font-size: 12px; color: var(--muted); }
+  .import-info { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .import-preview-wrap {
+    max-height: 180px; overflow-y: auto;
+    border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px;
+  }
+  .import-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .import-table th {
+    padding: 7px 10px; background: var(--surface-2); color: var(--muted);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border); text-align: left; position: sticky; top: 0;
+  }
+  .import-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .import-table tr:last-child td { border-bottom: none; }
+  .import-progress-bar { height: 6px; background: var(--surface-3); border-radius: 6px; overflow: hidden; margin-top: 8px; margin-bottom: 4px; }
+  .import-progress-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.25s; width: 0%; }
+  .import-result {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.9;
+  }
+  .import-result .res-ok  { color: var(--success); font-weight: 600; }
+  .import-result .res-dup { color: var(--warn);    font-weight: 600; }
+  .import-result .res-err { color: var(--danger);  font-weight: 600; }
+
   /* ── Responsive ─────────────────────────────────────────── */
   @media (max-width: 900px) {
     .sidebar { width: 60px; padding: 16px 8px; }
@@ -560,6 +596,9 @@
             <span class="selected-count" id="selected-count" style="display:none"></span>
             <button class="btn btn-outline" onclick="openWindowModal()" title="Set interview window">
               ⏰ Set Interview Window
+            </button>
+            <button class="btn btn-outline" onclick="openImportModal()">
+              Import CSV / XLSX
             </button>
             <button class="btn btn-primary" onclick="openAddModal()">
               ＋ Add Candidate
@@ -684,6 +723,43 @@
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
       <button class="btn-modal-save" id="btn-add-save" onclick="submitAddCandidate()">Add Candidate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ IMPORT CANDIDATES MODAL ═══════════════════ -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">Import Candidates</div>
+    <div class="modal-sub">Upload a CSV or Excel file with columns: <strong>Name</strong>, <strong>Email</strong>, <strong>Password</strong>. Headers are matched case-insensitively.</div>
+
+    <div id="import-dropzone" class="import-dropzone">
+      <div class="import-drop-icon">↑</div>
+      <div class="import-drop-text">Click to select a file, or drag &amp; drop here</div>
+      <div class="import-drop-hint">.csv &nbsp;·&nbsp; .xlsx &nbsp;·&nbsp; .xls &nbsp;— max 5 MB</div>
+      <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls"
+        style="display:none" onchange="handleImportFile(this)">
+    </div>
+
+    <div id="import-preview" style="display:none">
+      <div id="import-preview-info" class="import-info"></div>
+      <div class="import-preview-wrap">
+        <table id="import-preview-table" class="import-table"></table>
+      </div>
+    </div>
+
+    <div id="import-progress" style="display:none">
+      <div id="import-progress-text" class="import-info"></div>
+      <div class="import-progress-bar">
+        <div id="import-progress-fill" class="import-progress-fill"></div>
+      </div>
+    </div>
+
+    <div id="import-result" style="display:none" class="import-result"></div>
+
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-modal-cancel" onclick="closeImportModal()">Close</button>
+      <button class="btn-modal-save" id="btn-import-run" style="display:none" onclick="runImport()">Import</button>
     </div>
   </div>
 </div>
@@ -1245,6 +1321,186 @@ async function deleteCandidate(email, event) {
     if (res.success) { showToast(`Candidate ${name} deleted.`, "success"); await loadCandidates(); }
     else showToast("Failed to delete candidate.", "error");
   } catch (e) { showToast("Connection error.", "error"); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  IMPORT CANDIDATES
+// ═══════════════════════════════════════════════════════════
+let importRows = [];
+
+function openImportModal() {
+  importRows = [];
+  document.getElementById("import-file-input").value = "";
+  document.getElementById("import-dropzone").style.display = "block";
+  document.getElementById("import-preview").style.display  = "none";
+  document.getElementById("import-progress").style.display = "none";
+  document.getElementById("import-result").style.display   = "none";
+  document.getElementById("btn-import-run").style.display  = "none";
+  document.getElementById("import-modal").classList.add("open");
+}
+
+function closeImportModal() {
+  document.getElementById("import-modal").classList.remove("open");
+}
+
+document.getElementById("import-modal").addEventListener("click", function(e) {
+  if (e.target === this) closeImportModal();
+});
+
+// Click-to-browse
+document.getElementById("import-dropzone").addEventListener("click", function(e) {
+  if (e.target !== document.getElementById("import-file-input"))
+    document.getElementById("import-file-input").click();
+});
+
+// Drag-and-drop
+const _dz = document.getElementById("import-dropzone");
+_dz.addEventListener("dragover",  e => { e.preventDefault(); _dz.classList.add("drag-over"); });
+_dz.addEventListener("dragleave", ()  => _dz.classList.remove("drag-over"));
+_dz.addEventListener("drop", e => {
+  e.preventDefault(); _dz.classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file) processImportFile(file);
+});
+
+function handleImportFile(input) {
+  const file = input.files[0];
+  if (file) processImportFile(file);
+}
+
+function processImportFile(file) {
+  if (file.size > 5 * 1024 * 1024) { showToast("File too large (max 5 MB).", "error"); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb    = XLSX.read(e.target.result, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const raw   = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      parseImportRows(raw);
+    } catch (_) {
+      showToast("Could not parse file. Check the format.", "error");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseImportRows(raw) {
+  const nameKeys  = ["name", "full name", "fullname", "candidate name", "candidatename"];
+  const emailKeys = ["email", "email address", "emailaddress", "e-mail"];
+  const passKeys  = ["password", "pass", "pwd", "passwd"];
+
+  function findKey(obj, candidates) {
+    const lowerKeys = Object.keys(obj).map(k => k.toLowerCase().trim());
+    for (const c of candidates) {
+      const idx = lowerKeys.indexOf(c);
+      if (idx !== -1) return Object.keys(obj)[idx];
+    }
+    return null;
+  }
+
+  if (!raw.length) { showToast("File is empty.", "error"); return; }
+
+  const nameKey  = findKey(raw[0], nameKeys);
+  const emailKey = findKey(raw[0], emailKeys);
+  const passKey  = findKey(raw[0], passKeys);
+
+  if (!nameKey || !emailKey || !passKey) {
+    const found = Object.keys(raw[0]).join(", ");
+    showToast(`Missing columns. Need: Name, Email, Password. Found: ${found}`, "error");
+    return;
+  }
+
+  importRows = raw
+    .map(r => ({
+      name:  String(r[nameKey]  || "").trim(),
+      email: String(r[emailKey] || "").trim().toLowerCase(),
+      pass:  String(r[passKey]  || "").trim(),
+    }))
+    .filter(r => r.name && r.email && r.pass);
+
+  if (!importRows.length) {
+    showToast("No valid rows found — every row must have Name, Email and Password.", "error");
+    return;
+  }
+
+  const total   = importRows.length;
+  const showing = Math.min(5, total);
+
+  document.getElementById("import-dropzone").style.display = "none";
+  document.getElementById("import-preview").style.display  = "block";
+  document.getElementById("import-result").style.display   = "none";
+  document.getElementById("import-progress").style.display = "none";
+
+  document.getElementById("import-preview-info").textContent =
+    `${total} candidate${total !== 1 ? "s" : ""} found — previewing first ${showing}`;
+
+  document.getElementById("import-preview-table").innerHTML = `
+    <thead><tr><th>Name</th><th>Email</th><th>Password</th></tr></thead>
+    <tbody>
+      ${importRows.slice(0, showing).map(r =>
+        `<tr><td>${esc(r.name)}</td><td>${esc(r.email)}</td><td>${esc(r.pass)}</td></tr>`
+      ).join("")}
+      ${total > showing
+        ? `<tr><td colspan="3" style="color:var(--muted);text-align:center;font-style:italic">… and ${total - showing} more</td></tr>`
+        : ""}
+    </tbody>
+  `;
+
+  const runBtn = document.getElementById("btn-import-run");
+  runBtn.style.display  = "inline-flex";
+  runBtn.textContent    = `Import ${total} Candidate${total !== 1 ? "s" : ""}`;
+  runBtn.disabled       = false;
+}
+
+async function runImport() {
+  if (!importRows.length) return;
+
+  const total = importRows.length;
+  let created = 0, duplicates = 0, errList = [];
+
+  document.getElementById("import-preview").style.display  = "none";
+  document.getElementById("import-progress").style.display = "block";
+  document.getElementById("import-result").style.display   = "none";
+  document.getElementById("btn-import-run").style.display  = "none";
+
+  const progressText = document.getElementById("import-progress-text");
+  const progressFill = document.getElementById("import-progress-fill");
+
+  for (let i = 0; i < total; i++) {
+    const r = importRows[i];
+    progressText.textContent = `Importing ${i + 1} of ${total}…`;
+    progressFill.style.width = ((i / total) * 100) + "%";
+    try {
+      const res = await adminApi({
+        action: "addCandidate", name: r.name,
+        email: r.email, candidatePassword: r.pass,
+      });
+      if (res.success)                          created++;
+      else if (res.error === "candidate_exists") duplicates++;
+      else errList.push(r.email + ": " + (res.error || "unknown error"));
+    } catch (_) {
+      errList.push(r.email + ": connection error");
+    }
+  }
+
+  progressFill.style.width  = "100%";
+  progressText.textContent  = "Import complete.";
+
+  const resultEl = document.getElementById("import-result");
+  resultEl.style.display = "block";
+  resultEl.innerHTML = [
+    `<span class="res-ok">✓ ${created} created</span>`,
+    duplicates ? `<span class="res-dup">  ${duplicates} already existed (skipped)</span>` : "",
+    errList.length
+      ? `<span class="res-err">  ${errList.length} error${errList.length !== 1 ? "s" : ""}</span>
+         <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+           ${errList.slice(0, 5).map(e => esc(e)).join("<br>")}
+           ${errList.length > 5 ? `<br>… and ${errList.length - 5} more` : ""}
+         </div>`
+      : "",
+  ].filter(Boolean).join("<br>");
+
+  await loadCandidates();
 }
 
 // ═══════════════════════════════════════════════════════════
