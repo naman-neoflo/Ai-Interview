@@ -86,6 +86,19 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    // ── Edit candidate (slot + status) ──────────────────────────
+    if (action === "editCandidate") {
+      const { email, status, winStart, winEnd } = rest;
+      if (!email) return res.status(400).json({ error: "email required" });
+      const docId = email.trim().toLowerCase();
+      await db.collection("candidates").doc(docId).update({
+        Status:         status || "",
+        InterviewStart: winStart || null,
+        InterviewEnd:   winEnd   || null,
+      });
+      return res.status(200).json({ success: true });
+    }
+
     // ── Delete candidate ─────────────────────────────────────────
     if (action === "deleteCandidate") {
       const { email } = rest;
