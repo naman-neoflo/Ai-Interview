@@ -91,11 +91,12 @@ module.exports = async function handler(req, res) {
       const { email, status, winStart, winEnd } = rest;
       if (!email) return res.status(400).json({ error: "email required" });
       const docId = email.trim().toLowerCase();
-      await db.collection("candidates").doc(docId).update({
+      // Use set+merge so it works even if field names shift; never throws NOT_FOUND
+      await db.collection("candidates").doc(docId).set({
         Status:         status || "",
-        InterviewStart: winStart || null,
-        InterviewEnd:   winEnd   || null,
-      });
+        InterviewStart: winStart !== undefined ? (winStart || null) : null,
+        InterviewEnd:   winEnd   !== undefined ? (winEnd   || null) : null,
+      }, { merge: true });
       return res.status(200).json({ success: true });
     }
 

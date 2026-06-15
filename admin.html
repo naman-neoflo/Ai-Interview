@@ -978,13 +978,16 @@ async function saveCandidate(i, email) {
       showToast("Candidate updated.", "success");
       await loadCandidates();
     } else {
-      msgEl.textContent = "Failed to save.";
+      const errDetail = res.error || "unknown error";
+      msgEl.textContent = "Failed: " + errDetail;
       msgEl.style.color = "var(--danger)";
+      console.error("[editCandidate] server error:", errDetail);
       btn.disabled = false; btn.textContent = "Save Changes";
     }
   } catch (e) {
-    msgEl.textContent = "Connection error.";
+    msgEl.textContent = "Connection error: " + e.message;
     msgEl.style.color = "var(--danger)";
+    console.error("[editCandidate] fetch error:", e);
     btn.disabled = false; btn.textContent = "Save Changes";
   }
 }
