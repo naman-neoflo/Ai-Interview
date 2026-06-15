@@ -8,17 +8,18 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #000000;
-    --surface:   #0f0f0f;
-    --surface-2: #1a1a1a;
-    --surface-3: #242424;
-    --hover:     #2a2a2a;
+    --bg:        #f4f4f4;
+    --surface:   #ffffff;
+    --surface-2: #f0f0f0;
+    --surface-3: #e4e4e4;
+    --hover:     #ebebeb;
     --white:     #ffffff;
-    --muted:     #777777;
-    --muted-2:   #555555;
-    --border:    rgba(255,255,255,0.09);
-    --border-2:  rgba(255,255,255,0.16);
-    --accent:    #ffffff;
+    --text:      #0d0d0d;
+    --muted:     #888888;
+    --muted-2:   #aaaaaa;
+    --border:    rgba(0,0,0,0.08);
+    --border-2:  rgba(0,0,0,0.14);
+    --accent:    #000000;
     --danger:    #ef4444;
     --success:   #22c55e;
     --warn:      #f59e0b;
@@ -29,7 +30,7 @@
     height: 100%;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg);
-    color: var(--white);
+    color: var(--text);
     overflow-x: hidden;
   }
 
@@ -47,17 +48,17 @@
     border-radius: var(--radius);
     padding: 48px 40px;
     width: 100%; max-width: 440px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
   }
   .brand { display: flex; align-items: center; gap: 13px; margin-bottom: 36px; }
   .brand-logo {
     width: 40px; height: 40px;
-    background: var(--white); border-radius: 9px;
+    background: #000; border-radius: 9px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
   .brand-logo svg { width: 22px; height: 22px; }
-  .brand-name { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: var(--white); }
+  .brand-name { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: var(--text); }
   .brand-sub  { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
   .login-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
   .login-sub   { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
@@ -66,10 +67,10 @@
   .field input {
     width: 100%; padding: 13px 16px;
     background: var(--surface-2); border: 1px solid var(--border-2);
-    border-radius: 9px; color: var(--white); font-size: 15px;
+    border-radius: 9px; color: var(--text); font-size: 15px;
     outline: none; transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .field input:focus { border-color: rgba(255,255,255,0.5); box-shadow: 0 0 0 3px rgba(255,255,255,0.07); }
+  .field input:focus { border-color: rgba(0,0,0,0.4); box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
   .field input::placeholder { color: var(--muted-2); }
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -77,12 +78,12 @@
     font-size: 15px; font-weight: 600; cursor: pointer; border: none;
     transition: all 0.2s; width: 100%;
   }
-  .btn-primary { background: var(--white); color: #000; }
-  .btn-primary:hover:not(:disabled) { background: #e8e8e8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,255,255,0.15); }
+  .btn-primary { background: #000; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #222; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .error-msg {
     background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
-    color: #fca5a5; border-radius: 8px; padding: 12px 16px;
+    color: #dc2626; border-radius: 8px; padding: 12px 16px;
     font-size: 13px; margin-top: 16px; display: none;
   }
   .error-msg.show { display: block; }
@@ -107,7 +108,7 @@
   .header-brand { display: flex; align-items: center; gap: 10px; }
   .header-brand .brand-logo { width: 30px; height: 30px; border-radius: 7px; }
   .header-brand .brand-logo svg { width: 16px; height: 16px; }
-  .header-brand-name { font-size: 14px; font-weight: 700; color: var(--white); }
+  .header-brand-name { font-size: 14px; font-weight: 700; color: var(--text); }
   .header-sep { color: var(--muted-2); margin: 0 6px; }
   .header-candidate { font-size: 13px; color: var(--muted); }
 
@@ -130,8 +131,8 @@
     background: var(--surface-3); border: 1px solid var(--border-2);
     transition: all 0.3s;
   }
-  .dot.done    { background: var(--white); border-color: var(--white); }
-  .dot.current { background: var(--white); border-color: var(--white); transform: scale(1.4); }
+  .dot.done    { background: #0d0d0d; border-color: #0d0d0d; }
+  .dot.current { background: #0d0d0d; border-color: #0d0d0d; transform: scale(1.4); }
 
   .interview-body {
     flex: 1; display: flex; flex-direction: column;
@@ -159,7 +160,7 @@
     border-radius: var(--radius); padding: 32px 36px;
     font-size: 20px; font-weight: 600; line-height: 1.6;
     text-align: center; width: 100%; margin-bottom: 36px;
-    box-shadow: 0 4px 40px rgba(0,0,0,0.6);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
   }
 
   .mic-section { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
@@ -177,14 +178,14 @@
   /* Waveform */
   .waveform { display: none; align-items: flex-end; justify-content: center; gap: 4px; height: 44px; }
   .waveform.show { display: flex; }
-  .wb { width: 4px; background: var(--white); border-radius: 2px; height: 4px; transition: height 0.08s ease-out; opacity: 0.7; }
+  .wb { width: 4px; background: #0d0d0d; border-radius: 2px; height: 4px; transition: height 0.08s ease-out; opacity: 0.7; }
 
   /* Transcript */
   .transcript-box {
     width: 100%; min-height: 80px; max-height: 180px; overflow-y: auto;
     background: var(--surface-2); border: 1px solid var(--border-2);
     border-radius: 10px; padding: 16px 20px;
-    font-size: 15px; line-height: 1.7; color: var(--white); display: none;
+    font-size: 15px; line-height: 1.7; color: var(--text); display: none;
   }
   .transcript-box.show { display: block; }
 
@@ -196,15 +197,15 @@
   .auto-advance-wrap.show { display: flex; }
   .auto-advance-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
   .advance-track { width: 100%; height: 2px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
-  .advance-fill  { height: 100%; width: 0%; background: var(--white); border-radius: 2px; transition: width 0.2s linear; }
+  .advance-fill  { height: 100%; width: 0%; background: #0d0d0d; border-radius: 2px; transition: width 0.2s linear; }
 
   /* Status spinners */
   .status-msg { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
   .status-msg.show { display: inline-flex; }
-  .mini-spin { width: 13px; height: 13px; border: 2px solid var(--surface-3); border-top-color: var(--white); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .mini-spin { width: 13px; height: 13px; border: 2px solid var(--surface-3); border-top-color: #0d0d0d; border-radius: 50%; animation: spin 0.7s linear infinite; }
 
   /* Mic error */
-  .mic-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; border-radius: 8px; padding: 12px 18px; font-size: 13px; text-align: center; display: none; width: 100%; }
+  .mic-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #dc2626; border-radius: 8px; padding: 12px 18px; font-size: 13px; text-align: center; display: none; width: 100%; }
   .mic-error.show { display: block; }
 
   /* ── Submitting ─────────────────────────────────────── */
@@ -212,7 +213,7 @@
     flex-direction: column; align-items: center; justify-content: center;
     padding: 24px; text-align: center; background: var(--bg);
   }
-  .spinner { width: 48px; height: 48px; border: 2px solid var(--surface-3); border-top-color: var(--white); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 28px; }
+  .spinner { width: 48px; height: 48px; border: 2px solid var(--surface-3); border-top-color: #0d0d0d; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 28px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .submitting-title { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
   .submitting-sub   { font-size: 14px; color: var(--muted); }
@@ -225,7 +226,7 @@
   .result-card {
     background: var(--surface); border: 1px solid var(--border-2);
     border-radius: var(--radius); padding: 48px 40px;
-    max-width: 480px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+    max-width: 480px; width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.08);
   }
   .result-check    { font-size: 48px; margin-bottom: 20px; }
   .result-title    { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
@@ -233,9 +234,9 @@
   .result-divider  { border: none; border-top: 1px solid var(--border); margin-bottom: 20px; }
   .result-thankyou { font-size: 14px; color: var(--muted); line-height: 1.8; }
   .result-brand    { margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; opacity: 0.4; }
-  .result-brand-logo { width: 20px; height: 20px; background: var(--white); border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+  .result-brand-logo { width: 20px; height: 20px; background: #000; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
   .result-brand-logo svg { width: 11px; height: 11px; }
-  .result-brand-name { font-size: 12px; font-weight: 700; color: var(--white); }
+  .result-brand-name { font-size: 12px; font-weight: 700; color: var(--text); }
 
   /* ── Instructions ───────────────────────────────────── */
   #screen-instructions {
@@ -246,7 +247,7 @@
     background: var(--surface); border: 1px solid var(--border-2);
     border-radius: var(--radius); padding: 44px 40px;
     width: 100%; max-width: 600px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
   }
   .instr-header { display: flex; align-items: center; gap: 13px; margin-bottom: 28px; }
   .instr-title { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
@@ -268,13 +269,13 @@
     font-size: 16px; position: relative; z-index: 1;
   }
   .flow-step.active .flow-icon {
-    background: var(--white); border-color: var(--white);
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+    background: #0d0d0d; border-color: #0d0d0d;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
   }
   .flow-step.active .flow-icon span { filter: invert(1); }
   .flow-step.done .flow-icon { background: var(--surface-3); border-color: var(--border-2); opacity: 0.5; }
   .flow-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); text-align: center; white-space: nowrap; }
-  .flow-step.active .flow-label { color: var(--white); }
+  .flow-step.active .flow-label { color: var(--text); font-weight: 700; }
   .flow-connector {
     height: 1px; width: 32px; background: var(--border-2); flex-shrink: 0;
     margin-bottom: 22px;
@@ -292,8 +293,8 @@
     background: var(--surface-3); color: var(--muted);
     font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
   }
-  .instr-item-text { font-size: 14px; line-height: 1.6; color: var(--white); }
-  .instr-item-text strong { color: var(--white); font-weight: 600; }
+  .instr-item-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+  .instr-item-text strong { color: var(--text); font-weight: 600; }
   .instr-item-text span  { color: var(--muted); font-size: 13px; }
 
   .instr-warn {
@@ -321,7 +322,7 @@
     <div class="brand">
       <div class="brand-logo">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4h4l8 12h4V4h-4l-8 12H4V4z" fill="#000"/>
+          <path d="M4 4h4l8 12h4V4h-4l-8 12H4V4z" fill="#fff"/>
         </svg>
       </div>
       <div>
@@ -361,7 +362,7 @@
     <div class="instr-header">
       <div class="brand-logo">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4h4l8 12h4V4h-4l-8 12H4V4z" fill="#000"/>
+          <path d="M4 4h4l8 12h4V4h-4l-8 12H4V4z" fill="#fff"/>
         </svg>
       </div>
       <div>
@@ -424,20 +425,6 @@
           <span>Once you stop speaking, a progress bar will appear. After <strong>10 seconds of silence</strong> the interview moves to the next question automatically.</span>
         </div>
       </div>
-      <div class="instr-item">
-        <div class="instr-num">4</div>
-        <div class="instr-item-text">
-          <strong>Follow-up questions may be asked.</strong><br>
-          <span>The AI may ask a brief follow-up based on your answer. Treat it like a natural conversation.</span>
-        </div>
-      </div>
-      <div class="instr-item">
-        <div class="instr-num">5</div>
-        <div class="instr-item-text">
-          <strong>Your answers are transcribed &amp; scored.</strong><br>
-          <span>Everything is processed after the interview. Results go directly to our team — you won't see a score.</span>
-        </div>
-      </div>
     </div>
 
     <!-- Warning -->
@@ -458,7 +445,7 @@
     <div class="header-brand">
       <div class="brand-logo">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4h4l8 12h4V4h-4l-8 12H4V4z" fill="#000"/>
+          <path d="M4 4h4l8 12h4V4h-4l-8 12H4V4z" fill="#fff"/>
         </svg>
       </div>
       <span class="header-brand-name">Neoflo</span>
