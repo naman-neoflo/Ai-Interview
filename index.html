@@ -304,15 +304,16 @@
     font-size: 13px; color: var(--warn); line-height: 1.5;
   }
 
-  /* Skip button */
+  /* Next Question button */
   .btn-skip {
-    background: none; border: 1px solid var(--border-2);
-    color: var(--muted); border-radius: 8px; padding: 9px 20px;
-    font-size: 12px; font-weight: 600; cursor: pointer;
-    transition: all 0.2s; display: none; letter-spacing: 0.3px;
+    background: #000; color: #fff;
+    border: none; border-radius: 9px; padding: 13px 28px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: none; letter-spacing: 0.1px;
     align-items: center; gap: 6px;
   }
-  .btn-skip:hover { border-color: rgba(0,0,0,0.35); color: var(--text); }
+  .btn-skip:hover { background: #222; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
+  .btn-skip:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-skip.show { display: inline-flex; }
 
   /* ── Responsive ─────────────────────────────────────── */
@@ -360,7 +361,6 @@
 
 <!-- ═══════════════ ALREADY DONE ══════════════════════ -->
 <div id="screen-done" class="screen">
-  <div class="done-icon">✅</div>
   <div class="done-title">Interview Complete</div>
   <div class="done-sub">You have already completed this interview. Thank you — our team will be in touch soon.</div>
 </div>
@@ -388,27 +388,27 @@
     <!-- Screen flow -->
     <div class="flow-bar">
       <div class="flow-step done">
-        <div class="flow-icon"><span>🔐</span></div>
+        <div class="flow-icon"><span>1</span></div>
         <div class="flow-label">Login</div>
       </div>
       <div class="flow-connector"></div>
       <div class="flow-step active">
-        <div class="flow-icon"><span>📋</span></div>
+        <div class="flow-icon"><span>2</span></div>
         <div class="flow-label">Instructions</div>
       </div>
       <div class="flow-connector"></div>
       <div class="flow-step">
-        <div class="flow-icon"><span>🎙️</span></div>
+        <div class="flow-icon"><span>3</span></div>
         <div class="flow-label">Interview</div>
       </div>
       <div class="flow-connector"></div>
       <div class="flow-step">
-        <div class="flow-icon"><span>⏳</span></div>
+        <div class="flow-icon"><span>4</span></div>
         <div class="flow-label">Submitting</div>
       </div>
       <div class="flow-connector"></div>
       <div class="flow-step">
-        <div class="flow-icon"><span>🎉</span></div>
+        <div class="flow-icon"><span>5</span></div>
         <div class="flow-label">Complete</div>
       </div>
     </div>
@@ -432,19 +432,19 @@
       <div class="instr-item">
         <div class="instr-num">3</div>
         <div class="instr-item-text">
-          <strong>Next question advances on silence.</strong><br>
-          <span>Once you stop speaking, a progress bar will appear. After <strong>10 seconds of silence</strong> the interview moves to the next question automatically.</span>
+          <strong>Click "Next Question" when you're done.</strong><br>
+          <span>Take your time — the interview won't move forward until you click the button.</span>
         </div>
       </div>
     </div>
 
     <!-- Warning -->
     <div class="instr-warn">
-      ⚠️&nbsp; <span>Do <strong>not</strong> switch tabs or leave this page during the interview — it will be flagged. Ensure you are in a <strong>quiet environment</strong> with a working microphone.</span>
+      <span>Do <strong>not</strong> switch tabs or leave this page during the interview — it will be flagged. Ensure you are in a <strong>quiet environment</strong> with a working microphone.</span>
     </div>
 
     <button class="btn btn-primary" onclick="beginInterview()">
-      Start Interview →
+      Start Interview
     </button>
 
   </div>
@@ -476,7 +476,7 @@
   <div class="interview-body">
     <div class="q-label">
       <div class="q-counter" id="q-counter">Question 1</div>
-      <span class="followup-badge" id="followup-badge">⚡ Follow-up</span>
+      <span class="followup-badge" id="followup-badge">Follow-up</span>
     </div>
     <div class="question-box" id="question-text"></div>
 
@@ -492,17 +492,13 @@
       <div class="transcript-box" id="transcript-box"></div>
       <div class="mic-error" id="mic-error"></div>
       <div class="start-countdown" id="start-countdown"></div>
-      <div class="auto-advance-wrap" id="auto-advance-wrap">
-        <div class="auto-advance-label">Moving to next question</div>
-        <div class="advance-track"><div class="advance-fill" id="advance-fill"></div></div>
-      </div>
       <div class="status-msg" id="transcribing-msg">
         <div class="mini-spin"></div> Transcribing your answer…
       </div>
       <div class="status-msg" id="analysing-msg">
         <div class="mini-spin"></div> Analysing your answer…
       </div>
-      <button id="skip-btn" class="btn-skip" onclick="skipQuestion()">Skip question →</button>
+      <button id="skip-btn" class="btn-skip" onclick="nextQuestionClick()">Next Question</button>
     </div>
   </div>
 </div>
@@ -517,7 +513,6 @@
 <!-- ═══════════════ RESULT ════════════════════════════ -->
 <div id="screen-result" class="screen">
   <div class="result-card">
-    <div class="result-check">🎉</div>
     <div class="result-title">Interview Complete</div>
     <div class="result-name" id="result-name"></div>
     <hr class="result-divider">
@@ -542,14 +537,13 @@ const S = {
   mediaRecorder: null, audioChunks: [], stream: null,
   audioCtx: null, analyser: null,
   recording: false, hasSpeech: false, lastSpeech: 0,
-  silenceInt: null, countdownTimer: null, autoAdvancing: false,
+  silenceInt: null, countdownTimer: null,
   isFollowUp: false, checkingFollowUp: false,
   browserSR: null, browserTranscript: "",
+  totalSilenceSecs: 0, silenceStart: null,
 };
 
-const SOUND_THRESHOLD  = 12;
-const SILENCE_START_MS = 5000;
-const SILENCE_TOTAL_MS = 10000;
+const SOUND_THRESHOLD = 12;
 
 function show(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -643,7 +637,7 @@ function loadQ(idx, isFollowUp = false, followUpText = "") {
   stopSpeaking();
   clearTimeout(S.countdownTimer);
   S.currentQ = idx; S.audioChunks = []; S.hasSpeech = false;
-  S.isFollowUp = isFollowUp; S.autoAdvancing = false;
+  S.isFollowUp = isFollowUp; S.silenceStart = null;
 
   const questionText = isFollowUp ? followUpText : QUESTIONS[idx];
   document.getElementById("q-counter").textContent      = isFollowUp ? "Follow-up · Q" + (idx+1) : "Question " + (idx+1);
@@ -656,8 +650,6 @@ function loadQ(idx, isFollowUp = false, followUpText = "") {
   document.getElementById("rec-indicator").classList.remove("active");
   document.getElementById("waveform").classList.remove("show");
   document.getElementById("mic-error").classList.remove("show");
-  document.getElementById("auto-advance-wrap").classList.remove("show");
-  document.getElementById("advance-fill").style.width = "0%";
   document.getElementById("transcribing-msg").classList.remove("show");
   document.getElementById("analysing-msg").classList.remove("show");
 
@@ -749,22 +741,15 @@ async function startSpeaking() {
       bar.style.height = h + "px";
     });
     const avg = freqData.reduce((a, b) => a + b, 0) / freqData.length;
+    const now = Date.now();
     if (avg > SOUND_THRESHOLD) {
-      S.lastSpeech = Date.now();
       if (!S.hasSpeech) S.hasSpeech = true;
-      if (!S.autoAdvancing) {
-        document.getElementById("auto-advance-wrap").classList.remove("show");
-        document.getElementById("advance-fill").style.width = "0%";
+      if (S.silenceStart !== null) {
+        S.totalSilenceSecs += (now - S.silenceStart) / 1000;
+        S.silenceStart = null;
       }
-    }
-    if (S.hasSpeech && !S.checkingFollowUp && !S.autoAdvancing) {
-      const silence = Date.now() - S.lastSpeech;
-      if (silence >= SILENCE_START_MS) {
-        const pct = Math.min(100, (silence - SILENCE_START_MS) / (SILENCE_TOTAL_MS - SILENCE_START_MS) * 100);
-        document.getElementById("auto-advance-wrap").classList.add("show");
-        document.getElementById("advance-fill").style.width = pct + "%";
-        if (pct >= 100) { S.autoAdvancing = true; nextQuestion(); }
-      }
+    } else if (S.hasSpeech && S.silenceStart === null) {
+      S.silenceStart = now;
     }
   }, 150);
 }
@@ -773,10 +758,13 @@ function stopSpeaking() {
   return new Promise(resolve => {
     S.recording = false;
     clearInterval(S.silenceInt); S.silenceInt = null;
+    if (S.silenceStart !== null) {
+      S.totalSilenceSecs += (Date.now() - S.silenceStart) / 1000;
+      S.silenceStart = null;
+    }
     document.querySelectorAll(".wb").forEach(b => b.style.height = "4px");
     document.getElementById("rec-indicator").classList.remove("active");
     document.getElementById("waveform").classList.remove("show");
-    document.getElementById("auto-advance-wrap").classList.remove("show");
     document.getElementById("skip-btn").classList.remove("show");
     stopBrowserSTT();
     const cleanup = () => {
@@ -839,9 +827,8 @@ function stopBrowserSTT() {
   if (S.browserSR) { try { S.browserSR.stop(); } catch(_) {} S.browserSR = null; }
 }
 
-function skipQuestion() {
-  if (!S.recording || S.autoAdvancing || S.checkingFollowUp) return;
-  S.autoAdvancing = true;
+function nextQuestionClick() {
+  if (!S.recording || S.checkingFollowUp) return;
   nextQuestion();
 }
 
@@ -916,7 +903,8 @@ async function finishInterview() {
     await apiCandidate({ action: "updateCandidate", email: S.candidate.Email, fields: {
       "Status": "Interviewed", "Transcript": fullTranscript, "AI Score": aiScore,
       "AI Feedback": aiFeedback, "Suspicion Flags": S.flags.length ? S.flags.join(", ") : "None",
-      "Interviewed At": new Date().toISOString()
+      "Interviewed At": new Date().toISOString(),
+      "Silence (s)": Math.round(S.totalSilenceSecs),
     }});
   } catch (e) { console.error(e); }
 
