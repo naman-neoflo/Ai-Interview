@@ -844,9 +844,6 @@ async function nextQuestion() {
     document.getElementById("transcribing-msg").classList.add("show");
     try { answer = await transcribeChunks(chunks, mimeType); } catch (e) { console.error(e); }
     document.getElementById("transcribing-msg").classList.remove("show");
-    const tb = document.getElementById("transcript-box");
-    tb.className = "transcript-box show";
-    tb.innerHTML = "<span>" + esc(answer) + "</span>";
   }
 
   if (S.isFollowUp) {
