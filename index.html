@@ -594,9 +594,12 @@ const S = {
 
 const SOUND_THRESHOLD = 12;
 
+const SCREEN_HASH = { login:"", instructions:"instructions", interview:"interview", done:"done", submitting:"submitting", result:"complete" };
 function show(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById("screen-" + id).classList.add("active");
+  const hash = SCREEN_HASH[id] ?? id;
+  history.replaceState(null, "", hash ? "#" + hash : location.pathname + location.search);
 }
 function esc(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -667,6 +670,7 @@ async function handleLogin() {
     }
 
     document.getElementById("instr-name").textContent = c.Name;
+    sessionStorage.setItem("neoEmail", c.Email);
     show("instructions");
   } catch (e) {
     console.error(e);
@@ -994,6 +998,7 @@ async function finishInterview() {
   clearInterval(S.timerInt);
   await stopSpeaking();
   stopCamera();
+  sessionStorage.removeItem("neoEmail");
   document.removeEventListener("visibilitychange", onVisibilityChange);
   show("submitting");
 
@@ -1023,6 +1028,43 @@ async function finishInterview() {
   document.getElementById("result-name").textContent = S.candidate.Name;
   show("result");
 }
+
+// ── Session restore on page load ────────────────────────────
+(async function restoreSession() {
+  const email = sessionStorage.getItem("neoEmail");
+  if (!email) return;
+  try {
+    const data = await apiCandidate({ action: "getCandidate", email });
+    if (!data.success) { sessionStorage.removeItem("neoEmail"); return; }
+    const c = data.candidate;
+    if (String(c.Status || "").trim().toLowerCase() === "interviewed") {
+      sessionStorage.removeItem("neoEmail"); show("done"); return;
+    }
+    S.candidate = c;
+    try {
+      const qRes = await fetch("/api/questions");
+      const qData = await qRes.json();
+      if (qData.questions && qData.questions.length) QUESTIONS = qData.questions;
+    } catch (_) {}
+    const resumeFrom = parseInt(c.ResumeFrom || 0);
+    S.resumeFrom = (resumeFrom > 0 && resumeFrom < QUESTIONS.length) ? resumeFrom : 0;
+    S.answers = [];
+    if (S.resumeFrom > 0) {
+      try { if (c.PartialAnswers) S.answers = JSON.parse(c.PartialAnswers); } catch (_) {}
+      document.getElementById("resume-banner").classList.add("show");
+      document.getElementById("resume-banner-sub").textContent =
+        `You completed ${S.resumeFrom} question${S.resumeFrom !== 1 ? "s" : ""} in a previous session. Click Resume to continue from Question ${S.resumeFrom + 1}.`;
+      document.getElementById("btn-begin").textContent = `Resume from Question ${S.resumeFrom + 1}`;
+      document.getElementById("btn-start-over").style.display = "flex";
+    } else {
+      document.getElementById("resume-banner").classList.remove("show");
+      document.getElementById("btn-begin").textContent = "Start Interview";
+      document.getElementById("btn-start-over").style.display = "none";
+    }
+    document.getElementById("instr-name").textContent = c.Name;
+    show("instructions");
+  } catch (_) { sessionStorage.removeItem("neoEmail"); }
+})();
 </script>
 </body>
 </html>
