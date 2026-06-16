@@ -316,6 +316,34 @@
   .btn-skip:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-skip.show { display: inline-flex; }
 
+  /* ── Camera Preview ─────────────────────────────────── */
+  .camera-wrap {
+    position: fixed; bottom: 24px; right: 24px; z-index: 50;
+    width: 200px; border-radius: 14px; overflow: hidden;
+    background: #111; border: 2px solid rgba(0,0,0,0.18);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    display: none;
+  }
+  .camera-wrap.show { display: block; }
+  #cam-preview {
+    width: 100%; display: block;
+    transform: scaleX(-1); /* mirror — selfie style */
+    aspect-ratio: 4/3; object-fit: cover; background: #000;
+  }
+  .cam-rec-badge {
+    position: absolute; top: 8px; left: 8px;
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+    border-radius: 50px; padding: 3px 9px 3px 6px;
+    font-size: 10px; font-weight: 700; color: #fff;
+    letter-spacing: 1.2px; pointer-events: none;
+  }
+  .cam-rec-dot-sm {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--danger); flex-shrink: 0;
+    animation: rec-pulse 1.2s ease-in-out infinite;
+  }
+
   /* ── Responsive ─────────────────────────────────────── */
   @media (max-width: 600px) {
     .interview-header { padding: 12px 16px; }
@@ -503,6 +531,14 @@
   </div>
 </div>
 
+<!-- Camera preview overlay (interview only, never recorded) -->
+<div class="camera-wrap" id="camera-wrap">
+  <div class="cam-rec-badge">
+    <div class="cam-rec-dot-sm"></div>REC
+  </div>
+  <video id="cam-preview" autoplay muted playsinline></video>
+</div>
+
 <!-- ═══════════════ SUBMITTING ════════════════════════ -->
 <div id="screen-submitting" class="screen">
   <div class="spinner"></div>
@@ -541,6 +577,7 @@ const S = {
   isFollowUp: false, checkingFollowUp: false,
   browserSR: null, browserTranscript: "",
   totalSilenceSecs: 0, silenceStart: null,
+  cameraStream: null,
 };
 
 const SOUND_THRESHOLD = 12;
@@ -621,6 +658,26 @@ function startInterview() {
   buildDots(); loadQ(0); startTimer();
   document.addEventListener("visibilitychange", onVisibilityChange);
   show("interview");
+  startCamera();
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    S.cameraStream = stream;
+    document.getElementById("cam-preview").srcObject = stream;
+    document.getElementById("camera-wrap").classList.add("show");
+  } catch (_) {
+    // camera denied or unavailable — silently skip
+  }
+}
+
+function stopCamera() {
+  if (S.cameraStream) {
+    S.cameraStream.getTracks().forEach(t => t.stop());
+    S.cameraStream = null;
+  }
+  document.getElementById("camera-wrap").classList.remove("show");
 }
 function buildDots() {
   const c = document.getElementById("progress-dots");
@@ -880,6 +937,7 @@ function onVisibilityChange() {
 async function finishInterview() {
   clearInterval(S.timerInt);
   await stopSpeaking();
+  stopCamera();
   document.removeEventListener("visibilitychange", onVisibilityChange);
   show("submitting");
 
