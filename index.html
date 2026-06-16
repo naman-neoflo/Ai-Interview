@@ -316,6 +316,16 @@
   .btn-skip:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-skip.show { display: inline-flex; }
 
+  /* ── Resume Banner ──────────────────────────────────── */
+  .resume-banner {
+    background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; display: none;
+  }
+  .resume-banner.show { display: block; }
+  .resume-banner-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .resume-banner-sub   { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .instr-btn-group { display: flex; flex-direction: column; gap: 10px; }
+
   /* ── Camera Preview ─────────────────────────────────── */
   .camera-wrap {
     position: fixed; bottom: 24px; right: 24px; z-index: 50;
@@ -471,9 +481,20 @@
       <span>Do <strong>not</strong> switch tabs or leave this page during the interview — it will be flagged. Ensure you are in a <strong>quiet environment</strong> with a working microphone.</span>
     </div>
 
-    <button class="btn btn-primary" onclick="beginInterview()">
-      Start Interview
-    </button>
+    <!-- Resume banner (hidden unless a prior session exists) -->
+    <div class="resume-banner" id="resume-banner">
+      <div class="resume-banner-title">Session in progress</div>
+      <div class="resume-banner-sub" id="resume-banner-sub"></div>
+    </div>
+
+    <div class="instr-btn-group">
+      <button class="btn btn-primary" id="btn-begin" onclick="beginInterview()">
+        Start Interview
+      </button>
+      <button class="btn btn-outline" id="btn-start-over" onclick="startOver()" style="display:none">
+        Start Over from Question 1
+      </button>
+    </div>
 
   </div>
 </div>
@@ -578,6 +599,7 @@ const S = {
   browserSR: null, browserTranscript: "",
   totalSilenceSecs: 0, silenceStart: null,
   cameraStream: null,
+  resumeFrom: 0,
 };
 
 const SOUND_THRESHOLD = 12;
@@ -636,7 +658,24 @@ async function handleLogin() {
       const qData = await qRes.json();
       if (qData.questions && qData.questions.length) QUESTIONS = qData.questions;
     } catch (_) {}
-    // Show instructions screen before starting
+
+    // Detect prior session
+    const resumeFrom = parseInt(c.ResumeFrom || 0);
+    S.resumeFrom = (resumeFrom > 0 && resumeFrom < QUESTIONS.length) ? resumeFrom : 0;
+    S.answers = [];
+    if (S.resumeFrom > 0) {
+      try { if (c.PartialAnswers) S.answers = JSON.parse(c.PartialAnswers); } catch(_) {}
+      document.getElementById("resume-banner").classList.add("show");
+      document.getElementById("resume-banner-sub").textContent =
+        `You completed ${S.resumeFrom} question${S.resumeFrom !== 1 ? "s" : ""} in a previous session. Click Resume to continue from Question ${S.resumeFrom + 1}.`;
+      document.getElementById("btn-begin").textContent = `Resume from Question ${S.resumeFrom + 1}`;
+      document.getElementById("btn-start-over").style.display = "flex";
+    } else {
+      document.getElementById("resume-banner").classList.remove("show");
+      document.getElementById("btn-begin").textContent = "Start Interview";
+      document.getElementById("btn-start-over").style.display = "none";
+    }
+
     document.getElementById("instr-name").textContent = c.Name;
     show("instructions");
   } catch (e) {
@@ -650,12 +689,18 @@ function setErr(el, msg) { el.textContent = msg; el.classList.add("show"); }
 document.getElementById("inp-password").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
 
 function beginInterview() {
-  startInterview();
+  startInterview(S.resumeFrom);
 }
 
-function startInterview() {
+function startOver() {
+  S.resumeFrom = 0;
+  S.answers = [];
+  startInterview(0);
+}
+
+function startInterview(from = 0) {
   document.getElementById("hdr-name").textContent = S.candidate.Name;
-  buildDots(); loadQ(0); startTimer();
+  buildDots(from); loadQ(from); startTimer();
   document.addEventListener("visibilitychange", onVisibilityChange);
   show("interview");
   startCamera();
@@ -679,12 +724,12 @@ function stopCamera() {
   }
   document.getElementById("camera-wrap").classList.remove("show");
 }
-function buildDots() {
+function buildDots(from = 0) {
   const c = document.getElementById("progress-dots");
   c.innerHTML = "";
   QUESTIONS.forEach((_, i) => {
     const d = document.createElement("div");
-    d.className = "dot" + (i === 0 ? " current" : "");
+    d.className = "dot" + (i < from ? " done" : i === from ? " current" : "");
     d.id = "dot-" + i;
     c.appendChild(d);
   });
@@ -924,7 +969,26 @@ async function nextQuestion() {
 }
 function advanceQ() {
   document.getElementById("dot-" + S.currentQ).className = "dot done";
-  if (S.currentQ + 1 < QUESTIONS.length) { loadQ(S.currentQ + 1); } else { finishInterview(); }
+  const nextIdx = S.currentQ + 1;
+  if (nextIdx < QUESTIONS.length) {
+    saveProgress(nextIdx);
+    loadQ(nextIdx);
+  } else {
+    finishInterview();
+  }
+}
+
+async function saveProgress(nextIdx) {
+  try {
+    await apiCandidate({
+      action: "updateCandidate",
+      email: S.candidate.Email,
+      fields: {
+        "ResumeFrom": nextIdx,
+        "PartialAnswers": JSON.stringify(S.answers),
+      }
+    });
+  } catch (e) { console.error("[saveProgress]", e); }
 }
 function setAnalysing(on) {
   S.checkingFollowUp = on;
@@ -960,6 +1024,7 @@ async function finishInterview() {
       "AI Feedback": aiFeedback, "Suspicion Flags": S.flags.length ? S.flags.join(", ") : "None",
       "Interviewed At": new Date().toISOString(),
       "Silence (s)": Math.round(S.totalSilenceSecs),
+      "ResumeFrom": 0, "PartialAnswers": "",
     }});
   } catch (e) { console.error(e); }
 
