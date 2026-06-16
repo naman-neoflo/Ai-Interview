@@ -7,6 +7,7 @@ const path    = require("path");
 const app     = express();
 
 app.use(express.json({ limit: "20mb" })); // increased for base64 audio
+app.use(express.static(path.join(__dirname))); // serve favicon.png etc.
 
 // ── API routes (load each serverless handler) ──────────────────
 app.post("/api/candidate",  require("./api/candidate"));
